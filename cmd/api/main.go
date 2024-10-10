@@ -9,7 +9,7 @@ import (
 	"syscall"
 	"time"
 
-	"go-projeto/internal/server"
+	"github.com/MatthewAraujo/go-file-explorer/internal/server"
 )
 
 func gracefulShutdown(apiServer *http.Server) {

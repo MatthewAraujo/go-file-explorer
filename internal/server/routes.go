@@ -5,19 +5,19 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/MatthewAraujo/go-file-explorer/cmd/web"
+
 	"github.com/a-h/templ"
-	"go-projeto/cmd/web"
 )
 
 func (s *Server) RegisterRoutes() http.Handler {
-
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", s.HelloWorldHandler)
 
 	fileServer := http.FileServer(http.FS(web.Files))
 	mux.Handle("/assets/", fileServer)
-	mux.Handle("/web", templ.Handler(web.HelloForm()))
-	mux.HandleFunc("/hello", web.HelloWebHandler)
+	mux.Handle("/web", templ.Handler(web.FilesForm()))
+	mux.HandleFunc("/files", web.ListFilesHandler)
 
 	return mux
 }

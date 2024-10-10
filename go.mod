@@ -1,4 +1,4 @@
-module go-projeto
+module github.com/MatthewAraujo/go-file-explorer
 
 go 1.23.2
 

@@ -1,0 +1,22 @@
+package web
+
+templ FilesForm() {
+	@Base() {
+		<form hx-post="/files" method="POST" hx-target="#files-container">
+			<input class="border" id="name" name="name" type="text" placeholder="Digite o nome do diretório"/>
+			<button type="submit">Submit</button>
+		</form>
+		<div id="files-container"></div>
+	}
+}
+
+templ FilesList(directories []string) {
+	@Base() {
+		<h2>Lista de Diretórios</h2>
+		<ul>
+			for _, item := range directories {
+   		 <li>{ item}</li>
+  	}
+		</ul>
+	}
+}
