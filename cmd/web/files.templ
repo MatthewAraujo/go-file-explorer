@@ -1,22 +1,29 @@
 package web
 
-templ FilesForm() {
-	@Base() {
-		<form hx-post="/files" method="POST" hx-target="#files-container">
-			<input class="border" id="name" name="name" type="text" placeholder="Digite o nome do diretório"/>
-			<button type="submit">Submit</button>
-		</form>
-		<div id="files-container"></div>
-	}
-}
+import (
+  "fmt"
+)
 
 templ FilesList(directories []string) {
 	@Base() {
-		<h2>Lista de Diretórios</h2>
-		<ul>
-			for _, item := range directories {
-   		 <li>{ item}</li>
-  	}
-		</ul>
+		<div class="p-6 bg-gray-100 min-h-screen">
+			<h2 class="text-2xl font-bold text-gray-800 mb-4">Lista de Diretórios</h2>
+			<ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+				for _, item := range directories {
+					<li class="flex items-center p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition">
+						<svg class="w-6 h-6 text-blue-500 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+							<path fill-rule="evenodd" d="M3 4.5A1.5 1.5 0 0 1 4.5 3h6.379a1.5 1.5 0 0 1 1.06.44l1.06 1.06h5.501A1.5 1.5 0 0 1 20.5 6v11.25a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 17.25V4.5zM4.5 4.5v12.75h15V6H12.938l-1.06-1.06H4.5z" clip-rule="evenodd" />
+						</svg>
+						<a href="#" 
+						   hx-get={fmt.Sprintf("/subdirectories/%s", item)}
+						   hx-target="#subdirectory-list" 
+						   hx-swap="innerHTML" 
+						   class="text-gray-700 font-medium">{ item }</a>
+					</li>
+				}
+			</ul>
+			<div id="subdirectory-list"></div> <!-- Local onde os subdiretórios serão renderizados -->
+		</div>
 	}
 }
+

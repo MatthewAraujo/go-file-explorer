@@ -7,25 +7,44 @@ import (
 	"syscall"
 )
 
-func ListAllFolders(root string) ([]string, error) {
+// ListFirstLevelFolders lista os diretórios de primeiro nível no caminho especificado.
+func ListFirstLevelFolders(root string) ([]string, error) {
 	var folders []string
 
-	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		// Se houver um erro de permissão, simplesmente ignoramos e continuamos
+	dir, err := os.Open(root)
+	if err != nil {
+		log.Printf("Erro ao abrir diretório %s: %s", root, err)
+		return nil, err
+	}
+	defer dir.Close()
+
+	names, err := dir.Readdirnames(0)
+	if err != nil {
+		log.Printf("Erro ao ler nomes de diretórios em %s: %s", root, err)
+		return nil, err
+	}
+
+	for _, name := range names {
+		if name == "." || name == ".." { // Ignora diretórios especiais
+			continue
+		}
+
+		path := filepath.Join(root, name)
+		info, err := os.Stat(path)
 		if err != nil {
-			if pathErr, ok := err.(*os.PathError); ok && pathErr.Err == syscall.EACCES {
+			pathErr, ok := err.(*os.PathError)
+			if ok && pathErr.Err == syscall.EACCES {
 				log.Printf("Permissão negada ao tentar acessar %s. Ignorando...", path)
-				return nil // Retorna nil para ignorar o erro e continuar
+				continue
 			}
-			return err
+			log.Printf("Erro ao obter informações do diretório %s: %s", path, err)
+			continue
 		}
 
 		if info.IsDir() {
-			folders = append(folders, path)
+			folders = append(folders, name) // Retorna apenas o nome do diretório
 		}
+	}
 
-		return nil
-	})
-
-	return folders, err
+	return folders, nil
 }
