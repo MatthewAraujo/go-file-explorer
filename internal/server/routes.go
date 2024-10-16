@@ -12,7 +12,7 @@ func (s *Server) RegisterRoutes() http.Handler {
 	fileServer := http.FileServer(http.FS(web.Files))
 	mux.Handle("/assets/", fileServer)
 	mux.HandleFunc("/files", web.ListFilesHandler)
-	mux.HandleFunc("/subdirectories/{directory}", web.ListSubDirectoriesHandler)
+	mux.HandleFunc("/subdirectories", web.ListSubDirectoriesHandler)
 
 	return mux
 }

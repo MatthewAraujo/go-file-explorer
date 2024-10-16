@@ -7,44 +7,90 @@ import (
 	"syscall"
 )
 
-// ListFirstLevelFolders lista os diretórios de primeiro nível no caminho especificado.
-func ListFirstLevelFolders(root string) ([]string, error) {
-	var folders []string
+type Node struct {
+	Name     string
+	IsDir    bool
+	Children []*Node
+}
 
-	dir, err := os.Open(root)
+func buildTree(path string) (*Node, error) {
+	pathInfo, err := os.Stat(path)
 	if err != nil {
-		log.Printf("Erro ao abrir diretório %s: %s", root, err)
-		return nil, err
-	}
-	defer dir.Close()
-
-	names, err := dir.Readdirnames(0)
-	if err != nil {
-		log.Printf("Erro ao ler nomes de diretórios em %s: %s", root, err)
+		log.Printf("error accessing root path %s: %v", path, err)
 		return nil, err
 	}
 
-	for _, name := range names {
-		if name == "." || name == ".." { // Ignora diretórios especiais
+	rootNode := &Node{
+		Name:  pathInfo.Name(),
+		IsDir: pathInfo.IsDir(),
+	}
+
+	if pathInfo.IsDir() {
+		err = buildTreeRecursive(path, rootNode)
+		if err != nil {
+			log.Printf("error building tree %s: %v", path, err)
+			return rootNode, nil
+		}
+	}
+
+	return rootNode, nil
+}
+
+func buildTreeRecursive(currentPath string, currentNode *Node) error {
+	entries, err := os.ReadDir(currentPath)
+	if err != nil {
+		if pathErr, ok := err.(*os.PathError); ok && pathErr.Err == syscall.EACCES {
+			log.Printf("permissions denied  %s. Ignoring...", currentPath)
+			return nil
+		}
+		return err
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+
+		if name == "." || name == ".." || name == "mnt" {
 			continue
 		}
 
-		path := filepath.Join(root, name)
-		info, err := os.Stat(path)
+		entryPath := filepath.Join(currentPath, name)
+		entryInfo, err := os.Stat(entryPath)
 		if err != nil {
-			pathErr, ok := err.(*os.PathError)
-			if ok && pathErr.Err == syscall.EACCES {
-				log.Printf("Permissão negada ao tentar acessar %s. Ignorando...", path)
+			if pathErr, ok := err.(*os.PathError); ok && pathErr.Err == syscall.EACCES {
+				log.Printf("Permission denied %s. ignoring...", entryPath)
 				continue
 			}
-			log.Printf("Erro ao obter informações do diretório %s: %s", path, err)
 			continue
 		}
 
-		if info.IsDir() {
-			folders = append(folders, name) // Retorna apenas o nome do diretório
+		node := &Node{
+			Name:  name,
+			IsDir: entryInfo.IsDir(),
 		}
+
+		if entryInfo.IsDir() {
+			err = buildTreeRecursive(entryPath, node)
+			if err != nil {
+				log.Printf("Error processing directories %s: %v. ignoring childrens...", entryPath, err)
+			}
+		}
+
+		currentNode.Children = append(currentNode.Children, node)
 	}
 
-	return folders, nil
+	return nil
+}
+
+func ListAll(path string) (*Node, error) {
+
+	tree, err := buildTree(path)
+	if err != nil {
+		log.Printf("error building Tree %s: %v", path, err)
+		return nil, err
+	}
+
+	fakeStorage := NewFakeStorage()
+	fakeStorage.SaveTree(tree)
+
+	return tree, nil
 }
