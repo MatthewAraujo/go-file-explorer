@@ -27,3 +27,28 @@ templ FilesList(directories []string, currentDir string) {
 	}
 }
 
+templ FileSearched() {
+	@Base() {
+		<form hx-post="/search" method="POST" hx-target="#file-search-result">
+			<input class="bg-gray-200 text-black p-2 border border-gray-400 rounded-lg" id="file" name="file" type="text" placeholder="Digite o nome do arquivo"/>
+			<button type="submit" class="bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded">Buscar</button>
+		</form>
+		
+		<div id="file-search-result"></div>
+	}
+}
+
+templ FileSearchedResult(fileName []string) {
+	<div class="bg-green-100 p-4 shadow-md rounded-lg mt-6">
+			<ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+				for _, item := range fileName{
+					<li class="flex items-center p-4 bg-white rounded-lg shadow hover:bg-gray-50 transition">
+						<svg class="w-6 h-6 text-blue-500 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+							<path fill-rule="evenodd" d="M3 4.5A1.5 1.5 0 0 1 4.5 3h6.379a1.5 1.5 0 0 1 1.06.44l1.06 1.06h5.501A1.5 1.5 0 0 1 20.5 6v11.25a1.5 1.5 0 0 1-1.5 1.5H4.5A1.5 1.5 0 0 1 3 17.25V4.5zM4.5 4.5v12.75h15V6H12.938l-1.06-1.06H4.5z" clip-rule="evenodd" />
+						</svg>
+						   <span class="text-gray-700 font-medium">{ item }</span>
+					</li>
+				}
+			</ul>
+	</div>
+}

@@ -12,6 +12,7 @@ type FakeStorage interface {
 	ResetTree()
 	SaveTree(tree *Node)
 	DisplayTree(path string) []string
+	SearchFile(file string) ([]string, error)
 }
 
 type fakeStorage struct {
@@ -113,4 +114,27 @@ func (f *fakeStorage) findNodeByPath(path string) *Node {
 	}
 
 	return currentNode
+}
+
+func (f *fakeStorage) SearchFile(file string) ([]string, error) {
+	var searchNode func(nodes []*Node, path string) []string
+	searchNode = func(nodes []*Node, path string) []string {
+		var foundFiles []string
+		for _, node := range nodes {
+			currentPath := path + "/" + node.Name
+			if node.Name == file {
+				foundFiles = append(foundFiles, currentPath) // Adiciona o caminho completo
+			}
+			if node.IsDir {
+				foundFiles = append(foundFiles, searchNode(node.Children, currentPath)...)
+			}
+		}
+		return foundFiles
+	}
+
+	result := searchNode(f.tree.Children, "")
+	if len(result) == 0 {
+		return nil, fmt.Errorf("file does not exist")
+	}
+	return result, nil
 }
