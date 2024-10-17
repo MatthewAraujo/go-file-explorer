@@ -1,6 +1,7 @@
 package filesystem
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"path/filepath"
@@ -12,7 +13,7 @@ type FakeStorage interface {
 	ResetTree()
 	SaveTree(tree *Node)
 	DisplayTree(path string) []string
-	SearchFile(file string) ([]string, error)
+	SearchFile(ctx context.Context, file string) ([]string, error)
 }
 
 type fakeStorage struct {
@@ -116,25 +117,52 @@ func (f *fakeStorage) findNodeByPath(path string) *Node {
 	return currentNode
 }
 
-func (f *fakeStorage) SearchFile(file string) ([]string, error) {
-	var searchNode func(nodes []*Node, path string) []string
-	searchNode = func(nodes []*Node, path string) []string {
-		var foundFiles []string
+func (f *fakeStorage) SearchFile(ctx context.Context, file string) ([]string, error) {
+	var wg sync.WaitGroup
+	var foundFiles []string
+	var goFuncCounter int
+
+	// Mutex para proteger o acesso à variável foundFiles
+	var mu sync.Mutex
+
+	var searchNode func(nodes []*Node, path string)
+	searchNode = func(nodes []*Node, path string) {
+		defer wg.Done()
+
 		for _, node := range nodes {
-			currentPath := path + "/" + node.Name
-			if node.Name == file {
-				foundFiles = append(foundFiles, currentPath) // Adiciona o caminho completo
-			}
-			if node.IsDir {
-				foundFiles = append(foundFiles, searchNode(node.Children, currentPath)...)
+			select {
+			case <-ctx.Done():
+				// Sai se o contexto for cancelado
+				return
+			default:
+				currentPath := path + "/" + node.Name
+				if node.Name == file {
+					mu.Lock()
+					foundFiles = append(foundFiles, currentPath) // Adiciona o caminho completo
+					mu.Unlock()
+				}
+				if node.IsDir {
+					wg.Add(1)
+					go searchNode(node.Children, currentPath)
+				}
+
+				// Incrementa o contador sempre que a go func for chamada
+				f.mu.Lock()
+				goFuncCounter++
+				f.mu.Unlock()
 			}
 		}
-		return foundFiles
 	}
 
-	result := searchNode(f.tree.Children, "")
-	if len(result) == 0 {
+	wg.Add(1)
+	go searchNode(f.tree.Children, "")
+
+	wg.Wait()
+
+	if len(foundFiles) == 0 {
 		return nil, fmt.Errorf("file does not exist")
 	}
-	return result, nil
+	log.Printf("Go func was called %d", goFuncCounter)
+
+	return foundFiles, nil
 }

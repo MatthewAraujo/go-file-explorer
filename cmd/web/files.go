@@ -69,7 +69,7 @@ func SearchFileHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fakeStorage := filesystem.NewFakeStorage()
-	files, err := fakeStorage.SearchFile(file)
+	files, err := fakeStorage.SearchFile(r.Context(), file)
 	if err != nil {
 		component := FileSearchedResult(files)
 		err := component.Render(r.Context(), w)
