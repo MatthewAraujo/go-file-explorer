@@ -122,9 +122,6 @@ func (f *fakeStorage) SearchFile(ctx context.Context, file string) ([]string, er
 	var foundFiles []string
 	var goFuncCounter int
 
-	// Mutex para proteger o acesso à variável foundFiles
-	var mu sync.Mutex
-
 	var searchNode func(nodes []*Node, path string)
 	searchNode = func(nodes []*Node, path string) {
 		defer wg.Done()
@@ -132,24 +129,18 @@ func (f *fakeStorage) SearchFile(ctx context.Context, file string) ([]string, er
 		for _, node := range nodes {
 			select {
 			case <-ctx.Done():
-				// Sai se o contexto for cancelado
 				return
 			default:
 				currentPath := path + "/" + node.Name
 				if node.Name == file {
-					mu.Lock()
-					foundFiles = append(foundFiles, currentPath) // Adiciona o caminho completo
-					mu.Unlock()
+					foundFiles = append(foundFiles, currentPath)
 				}
 				if node.IsDir {
 					wg.Add(1)
 					go searchNode(node.Children, currentPath)
 				}
 
-				// Incrementa o contador sempre que a go func for chamada
-				f.mu.Lock()
 				goFuncCounter++
-				f.mu.Unlock()
 			}
 		}
 	}
